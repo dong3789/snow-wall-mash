@@ -7,7 +7,47 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="game-container">
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <div class="start-content">
+            <h1>스노우 월 스매셔</h1>
+            <p class="subtitle">Snow Wall Smasher</p>
+
+            <div class="costume-section">
+                <h3>투척 아이템 선택</h3>
+                <div class="costume-grid">
+                    <div class="costume-option selected" data-costume="snowball">
+                        <span class="costume-emoji">⚪</span>
+                        <span class="costume-name">눈덩이</span>
+                    </div>
+                    <div class="costume-option" data-costume="shuriken">
+                        <span class="costume-emoji">⭐</span>
+                        <span class="costume-name">표창</span>
+                    </div>
+                    <div class="costume-option" data-costume="hamburger">
+                        <span class="costume-emoji">🍔</span>
+                        <span class="costume-name">햄버거</span>
+                    </div>
+                    <div class="costume-option" data-costume="taco">
+                        <span class="costume-emoji">🌮</span>
+                        <span class="costume-name">타코</span>
+                    </div>
+                    <div class="costume-option" data-costume="fish">
+                        <span class="costume-emoji">🐟</span>
+                        <span class="costume-name">생선</span>
+                    </div>
+                    <div class="costume-option" data-costume="rocket">
+                        <span class="costume-emoji">🚀</span>
+                        <span class="costume-name">로켓</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="start-btn">게임 시작</button>
+        </div>
+    </div>
+
+    <div id="game-container" class="hidden">
         <!-- Top UI -->
         <div id="top-ui">
             <div id="score-display">
@@ -49,7 +89,7 @@
                     <span class="count" id="paint-count">2</span>
                 </div>
             </div>
-            <div id="throw-hint">화면을 드래그하여 눈덩이를 던지세요!</div>
+            <div id="throw-hint">화면을 드래그하여 던지세요!</div>
         </div>
 
         <!-- Curve Indicator -->

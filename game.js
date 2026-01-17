@@ -6,6 +6,52 @@
 // Matter.js module aliases
 const { Engine, Render, Runner, Bodies, Body, Composite, Events, Vector, Mouse, Query } = Matter;
 
+// Costume Configuration
+const COSTUMES = {
+    snowball: {
+        name: '눈덩이',
+        emoji: '⚪',
+        normal: { emoji: '⚪', color: '#ffffff' },
+        heavy: { emoji: '🔵', color: '#42a5f5' },
+        paint: { emoji: '🔴', color: '#ec407a' }
+    },
+    shuriken: {
+        name: '표창',
+        emoji: '⭐',
+        normal: { emoji: '⭐', color: '#ffd700' },
+        heavy: { emoji: '🌟', color: '#ff8c00' },
+        paint: { emoji: '💫', color: '#ff69b4' }
+    },
+    hamburger: {
+        name: '햄버거',
+        emoji: '🍔',
+        normal: { emoji: '🍔', color: '#d2691e' },
+        heavy: { emoji: '🍖', color: '#8b4513' },
+        paint: { emoji: '🍟', color: '#ffd700' }
+    },
+    taco: {
+        name: '타코',
+        emoji: '🌮',
+        normal: { emoji: '🌮', color: '#f4a460' },
+        heavy: { emoji: '🌯', color: '#daa520' },
+        paint: { emoji: '🫔', color: '#ff6347' }
+    },
+    fish: {
+        name: '생선',
+        emoji: '🐟',
+        normal: { emoji: '🐟', color: '#4169e1' },
+        heavy: { emoji: '🐋', color: '#191970' },
+        paint: { emoji: '🦑', color: '#ff69b4' }
+    },
+    rocket: {
+        name: '로켓',
+        emoji: '🚀',
+        normal: { emoji: '🚀', color: '#ff4500' },
+        heavy: { emoji: '🛸', color: '#9400d3' },
+        paint: { emoji: '✨', color: '#ff1493' }
+    }
+};
+
 // Game Configuration
 const CONFIG = {
     // Physics
@@ -15,11 +61,11 @@ const CONFIG = {
     curveStrength: 0.003,
     maxThrowSpeed: 25,
 
-    // Snowball properties
-    snowball: {
-        normal: { radius: 15, mass: 1, restitution: 0.3, color: '#ffffff' },
-        heavy: { radius: 20, mass: 3, restitution: 0.1, color: '#42a5f5' },
-        paint: { radius: 18, mass: 0.8, restitution: 0.2, color: '#ec407a', splashRadius: 80 }
+    // Projectile properties (physics - same for all costumes)
+    projectile: {
+        normal: { radius: 15, mass: 1, restitution: 0.3 },
+        heavy: { radius: 20, mass: 3, restitution: 0.1 },
+        paint: { radius: 18, mass: 0.8, restitution: 0.2, splashRadius: 80 }
     },
 
     // Wall properties
@@ -52,16 +98,17 @@ const CONFIG = {
 // Game State
 class GameState {
     constructor() {
+        this.costume = 'snowball'; // Default costume
         this.reset();
     }
 
     reset() {
         this.score = 0;
         this.level = 1;
-        this.snowballsRemaining = CONFIG.initialSnowballs;
-        this.heavySnowballs = CONFIG.heavySnowballs;
-        this.paintSnowballs = CONFIG.paintSnowballs;
-        this.selectedSnowballType = 'normal';
+        this.projectilesRemaining = CONFIG.initialSnowballs;
+        this.heavyProjectiles = CONFIG.heavySnowballs;
+        this.paintProjectiles = CONFIG.paintSnowballs;
+        this.selectedProjectileType = 'normal';
         this.wind = { x: 0, y: 0 };
         this.targetFound = false;
         this.targetDestroyed = false;
@@ -71,7 +118,7 @@ class GameState {
         this.isDragging = false;
         this.dragStart = null;
         this.dragHistory = [];
-        this.activeSnowballs = [];
+        this.activeProjectiles = [];
         this.wallBricks = [];
         this.targetBricks = [];
         this.paintSplatters = [];
@@ -86,7 +133,33 @@ class SnowWallSmasher {
         this.engine = null;
         this.render = null;
         this.runner = null;
+        this.gameStarted = false;
 
+        this.setupStartScreen();
+    }
+
+    setupStartScreen() {
+        // Costume selection
+        document.querySelectorAll('.costume-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.costume-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                this.state.costume = option.dataset.costume;
+            });
+        });
+
+        // Start button
+        document.getElementById('start-btn').addEventListener('click', () => {
+            this.startGame();
+        });
+    }
+
+    startGame() {
+        // Hide start screen, show game
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-container').classList.remove('hidden');
+
+        this.gameStarted = true;
         this.init();
     }
 
@@ -214,7 +287,7 @@ class SnowWallSmasher {
 
         // Snowball type selection
         document.querySelectorAll('.snowball-type').forEach(el => {
-            el.addEventListener('click', () => this.selectSnowballType(el.dataset.type));
+            el.addEventListener('click', () => this.selectProjectileType(el.dataset.type));
         });
 
         // Restart button
@@ -286,8 +359,8 @@ class SnowWallSmasher {
         // Calculate curve from drag history
         const curve = this.calculateCurve();
 
-        // Create and throw snowball
-        this.throwSnowball(dragStart, { x: dx, y: dy }, curve);
+        // Create and throw projectile
+        this.throwProjectile(dragStart, { x: dx, y: dy }, curve);
 
         this.state.dragStart = null;
         this.state.dragHistory = [];
@@ -316,19 +389,21 @@ class SnowWallSmasher {
         return Math.max(-1, Math.min(1, normalizedCurve));
     }
 
-    throwSnowball(startPos, velocity, curve) {
-        const type = this.state.selectedSnowballType;
+    throwProjectile(startPos, velocity, curve) {
+        const type = this.state.selectedProjectileType;
+        const costume = COSTUMES[this.state.costume];
 
-        console.log('Throwing snowball:', type);
+        console.log('Throwing projectile:', type, 'costume:', this.state.costume);
         console.log('Start position:', startPos);
         console.log('Velocity:', velocity);
 
-        // Check if we have enough snowballs
-        if (type === 'heavy' && this.state.heavySnowballs <= 0) return;
-        if (type === 'paint' && this.state.paintSnowballs <= 0) return;
-        if (type === 'normal' && this.state.snowballsRemaining <= 0) return;
+        // Check if we have enough projectiles
+        if (type === 'heavy' && this.state.heavyProjectiles <= 0) return;
+        if (type === 'paint' && this.state.paintProjectiles <= 0) return;
+        if (type === 'normal' && this.state.projectilesRemaining <= 0) return;
 
-        const config = CONFIG.snowball[type];
+        const physics = CONFIG.projectile[type];
+        const visual = costume[type];
 
         // Calculate throw velocity
         let vx = velocity.x * CONFIG.throwMultiplier;
@@ -342,41 +417,43 @@ class SnowWallSmasher {
             vy *= scale;
         }
 
-        // Create snowball body
-        const snowball = Bodies.circle(startPos.x, startPos.y, config.radius, {
-            mass: config.mass,
-            restitution: config.restitution,
+        // Create projectile body
+        const projectile = Bodies.circle(startPos.x, startPos.y, physics.radius, {
+            mass: physics.mass,
+            restitution: physics.restitution,
             friction: 0.1,
             frictionAir: 0.01,
             render: {
-                fillStyle: config.color,
-                strokeStyle: this.darkenColor(config.color, 30),
-                lineWidth: 2
+                fillStyle: visual.color,
+                strokeStyle: this.darkenColor(visual.color, 30),
+                lineWidth: 2,
+                visible: false // We'll draw emoji instead
             },
-            label: 'snowball',
-            snowballType: type,
+            label: 'projectile',
+            projectileType: type,
+            emoji: visual.emoji,
             curve: curve,
             initialScale: 1
         });
 
         // Apply initial velocity
-        Body.setVelocity(snowball, { x: vx, y: vy });
+        Body.setVelocity(projectile, { x: vx, y: vy });
 
         // Add to world
-        Composite.add(this.engine.world, snowball);
-        this.state.activeSnowballs.push(snowball);
+        Composite.add(this.engine.world, projectile);
+        this.state.activeProjectiles.push(projectile);
 
-        console.log('Snowball created at:', snowball.position);
-        console.log('Snowball velocity:', vx, vy);
-        console.log('Active snowballs:', this.state.activeSnowballs.length);
+        console.log('Projectile created at:', projectile.position);
+        console.log('Projectile velocity:', vx, vy);
+        console.log('Active projectiles:', this.state.activeProjectiles.length);
 
-        // Decrement snowball count
+        // Decrement projectile count
         if (type === 'normal') {
-            this.state.snowballsRemaining--;
+            this.state.projectilesRemaining--;
         } else if (type === 'heavy') {
-            this.state.heavySnowballs--;
+            this.state.heavyProjectiles--;
         } else if (type === 'paint') {
-            this.state.paintSnowballs--;
+            this.state.paintProjectiles--;
         }
 
         // Show curve indicator
@@ -399,26 +476,26 @@ class SnowWallSmasher {
         pairs.forEach(pair => {
             const { bodyA, bodyB } = pair;
 
-            // Check if snowball hit a brick
-            const snowball = bodyA.label === 'snowball' ? bodyA :
-                            (bodyB.label === 'snowball' ? bodyB : null);
+            // Check if projectile hit a brick
+            const projectile = bodyA.label === 'projectile' ? bodyA :
+                            (bodyB.label === 'projectile' ? bodyB : null);
             const brick = bodyA.label === 'brick' ? bodyA :
                          (bodyB.label === 'brick' ? bodyB : null);
 
-            if (snowball && brick) {
-                this.onSnowballHitBrick(snowball, brick, pair);
+            if (projectile && brick) {
+                this.onProjectileHitBrick(projectile, brick, pair);
             }
         });
     }
 
-    onSnowballHitBrick(snowball, brick, collision) {
+    onProjectileHitBrick(projectile, brick, collision) {
         const speed = Math.sqrt(
-            snowball.velocity.x ** 2 + snowball.velocity.y ** 2
+            projectile.velocity.x ** 2 + projectile.velocity.y ** 2
         );
 
-        // Calculate damage based on speed and snowball type
+        // Calculate damage based on speed and projectile type
         let damage = speed * 0.5;
-        if (snowball.snowballType === 'heavy') {
+        if (projectile.projectileType === 'heavy') {
             damage *= 2;
         }
 
@@ -426,11 +503,12 @@ class SnowWallSmasher {
         brick.health = (brick.health || brick.maxHealth) - damage;
 
         // Create impact effect
-        this.createImpactEffect(collision.collision.supports[0] || brick.position, snowball.snowballType);
+        this.createImpactEffect(collision.collision.supports[0] || brick.position, projectile.projectileType);
 
-        // Paint snowball reveals hidden target
-        if (snowball.snowballType === 'paint') {
-            this.createPaintSplatter(brick.position, snowball.render.fillStyle);
+        // Paint projectile reveals hidden target
+        if (projectile.projectileType === 'paint') {
+            const costume = COSTUMES[this.state.costume];
+            this.createPaintSplatter(brick.position, costume.paint.color);
             this.checkTargetReveal(brick);
         }
 
@@ -442,10 +520,10 @@ class SnowWallSmasher {
             this.updateBrickAppearance(brick);
         }
 
-        // Remove snowball after impact (with slight delay for effect)
+        // Remove projectile after impact (with slight delay for effect)
         setTimeout(() => {
-            Composite.remove(this.engine.world, snowball);
-            this.state.activeSnowballs = this.state.activeSnowballs.filter(s => s !== snowball);
+            Composite.remove(this.engine.world, projectile);
+            this.state.activeProjectiles = this.state.activeProjectiles.filter(p => p !== projectile);
         }, 50);
     }
 
@@ -506,13 +584,13 @@ class SnowWallSmasher {
         brick.render.opacity = 0.7 + healthPercent * 0.3;
     }
 
-    createImpactEffect(position, snowballType) {
+    createImpactEffect(position, projectileType) {
         const effect = document.createElement('div');
         effect.className = 'impact-effect';
         effect.style.left = `${position.x - 30}px`;
         effect.style.top = `${position.y - 30}px`;
 
-        if (snowballType === 'heavy') {
+        if (projectileType === 'heavy') {
             effect.style.width = '100px';
             effect.style.height = '100px';
             effect.style.left = `${position.x - 50}px`;
@@ -527,7 +605,7 @@ class SnowWallSmasher {
         this.state.paintSplatters.push({
             x: position.x,
             y: position.y,
-            radius: CONFIG.snowball.paint.splashRadius,
+            radius: CONFIG.projectile.paint.splashRadius,
             color: color,
             alpha: 0.6
         });
@@ -541,7 +619,7 @@ class SnowWallSmasher {
                 const dy = brick.position.y - hitBrick.position.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance < CONFIG.snowball.paint.splashRadius) {
+                if (distance < CONFIG.projectile.paint.splashRadius) {
                     brick.revealed = true;
                     brick.render.fillStyle = '#ffd700';
                     brick.render.strokeStyle = '#ff8c00';
@@ -705,34 +783,34 @@ class SnowWallSmasher {
     }
 
     gameLoop() {
-        // Apply wind and curve to active snowballs
-        this.state.activeSnowballs.forEach(snowball => {
+        // Apply wind and curve to active projectiles
+        this.state.activeProjectiles.forEach(projectile => {
             // Apply wind
-            Body.applyForce(snowball, snowball.position, this.state.wind);
+            Body.applyForce(projectile, projectile.position, this.state.wind);
 
             // Apply curve (Magnus effect)
-            if (snowball.curve && Math.abs(snowball.curve) > 0.1) {
+            if (projectile.curve && Math.abs(projectile.curve) > 0.1) {
                 const curveForce = {
-                    x: snowball.curve * CONFIG.curveStrength * snowball.velocity.y,
-                    y: -snowball.curve * CONFIG.curveStrength * snowball.velocity.x * 0.5
+                    x: projectile.curve * CONFIG.curveStrength * projectile.velocity.y,
+                    y: -projectile.curve * CONFIG.curveStrength * projectile.velocity.x * 0.5
                 };
-                Body.applyForce(snowball, snowball.position, curveForce);
+                Body.applyForce(projectile, projectile.position, curveForce);
             }
 
-            // Scale snowball based on Y position (perspective)
-            const yRatio = snowball.position.y / this.canvas.height;
+            // Scale projectile based on Y position (perspective)
+            const yRatio = projectile.position.y / this.canvas.height;
             const scale = 0.5 + yRatio * 0.5;
-            if (Math.abs(scale - snowball.initialScale) > 0.05) {
-                Body.scale(snowball, scale / snowball.initialScale, scale / snowball.initialScale);
-                snowball.initialScale = scale;
+            if (Math.abs(scale - projectile.initialScale) > 0.05) {
+                Body.scale(projectile, scale / projectile.initialScale, scale / projectile.initialScale);
+                projectile.initialScale = scale;
             }
 
             // Remove if out of bounds
-            if (snowball.position.y > this.canvas.height + 100 ||
-                snowball.position.x < -100 ||
-                snowball.position.x > this.canvas.width + 100) {
-                Composite.remove(this.engine.world, snowball);
-                this.state.activeSnowballs = this.state.activeSnowballs.filter(s => s !== snowball);
+            if (projectile.position.y > this.canvas.height + 100 ||
+                projectile.position.x < -100 ||
+                projectile.position.x > this.canvas.width + 100) {
+                Composite.remove(this.engine.world, projectile);
+                this.state.activeProjectiles = this.state.activeProjectiles.filter(p => p !== projectile);
                 this.checkGameState();
             }
         });
@@ -762,9 +840,9 @@ class SnowWallSmasher {
             ctx.restore();
         });
 
-        // Draw snowball trail
-        this.state.activeSnowballs.forEach(snowball => {
-            this.drawSnowballTrail(ctx, snowball);
+        // Draw projectiles with emoji
+        this.state.activeProjectiles.forEach(projectile => {
+            this.drawProjectile(ctx, projectile);
         });
     }
 
@@ -823,31 +901,38 @@ class SnowWallSmasher {
         ctx.restore();
     }
 
-    drawSnowballTrail(ctx, snowball) {
-        const speed = Math.sqrt(snowball.velocity.x ** 2 + snowball.velocity.y ** 2);
-        if (speed < 2) return;
+    drawProjectile(ctx, projectile) {
+        const emoji = projectile.emoji;
+        const radius = projectile.circleRadius || 15;
+        const fontSize = radius * 2;
 
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.font = `${fontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(emoji, projectile.position.x, projectile.position.y);
 
-        for (let i = 1; i <= 5; i++) {
-            const trailX = snowball.position.x - snowball.velocity.x * i * 0.5;
-            const trailY = snowball.position.y - snowball.velocity.y * i * 0.5;
-            const radius = snowball.circleRadius * (1 - i * 0.15);
-
-            ctx.beginPath();
-            ctx.arc(trailX, trailY, radius, 0, Math.PI * 2);
-            ctx.fill();
+        // Draw trail
+        const speed = Math.sqrt(projectile.velocity.x ** 2 + projectile.velocity.y ** 2);
+        if (speed > 2) {
+            ctx.globalAlpha = 0.3;
+            for (let i = 1; i <= 3; i++) {
+                const trailX = projectile.position.x - projectile.velocity.x * i * 0.3;
+                const trailY = projectile.position.y - projectile.velocity.y * i * 0.3;
+                const trailSize = fontSize * (1 - i * 0.2);
+                ctx.font = `${trailSize}px Arial`;
+                ctx.fillText(emoji, trailX, trailY);
+            }
         }
         ctx.restore();
     }
 
-    selectSnowballType(type) {
+    selectProjectileType(type) {
         // Check availability
-        if (type === 'heavy' && this.state.heavySnowballs <= 0) return;
-        if (type === 'paint' && this.state.paintSnowballs <= 0) return;
+        if (type === 'heavy' && this.state.heavyProjectiles <= 0) return;
+        if (type === 'paint' && this.state.paintProjectiles <= 0) return;
 
-        this.state.selectedSnowballType = type;
+        this.state.selectedProjectileType = type;
 
         // Update UI
         document.querySelectorAll('.snowball-type').forEach(el => {
@@ -857,17 +942,17 @@ class SnowWallSmasher {
 
     updateUI() {
         document.getElementById('score').textContent = this.state.score;
-        document.getElementById('remaining').textContent = this.state.snowballsRemaining;
-        document.getElementById('heavy-count').textContent = this.state.heavySnowballs;
-        document.getElementById('paint-count').textContent = this.state.paintSnowballs;
+        document.getElementById('remaining').textContent = this.state.projectilesRemaining;
+        document.getElementById('heavy-count').textContent = this.state.heavyProjectiles;
+        document.getElementById('paint-count').textContent = this.state.paintProjectiles;
 
         // Update button states
         document.querySelectorAll('.snowball-type').forEach(el => {
             const type = el.dataset.type;
             if (type === 'heavy') {
-                el.classList.toggle('disabled', this.state.heavySnowballs <= 0);
+                el.classList.toggle('disabled', this.state.heavyProjectiles <= 0);
             } else if (type === 'paint') {
-                el.classList.toggle('disabled', this.state.paintSnowballs <= 0);
+                el.classList.toggle('disabled', this.state.paintProjectiles <= 0);
             }
         });
     }
@@ -879,12 +964,12 @@ class SnowWallSmasher {
             return;
         }
 
-        // Lose condition: no snowballs and no active snowballs
-        const totalSnowballs = this.state.snowballsRemaining +
-                              this.state.heavySnowballs +
-                              this.state.paintSnowballs;
+        // Lose condition: no projectiles and no active projectiles
+        const totalProjectiles = this.state.projectilesRemaining +
+                              this.state.heavyProjectiles +
+                              this.state.paintProjectiles;
 
-        if (totalSnowballs <= 0 && this.state.activeSnowballs.length === 0) {
+        if (totalProjectiles <= 0 && this.state.activeProjectiles.length === 0) {
             this.defeat();
         }
     }
@@ -992,8 +1077,8 @@ class SnowWallSmasher {
         this.updateUI();
         this.showLevelInfo();
 
-        // Reset snowball selection
-        this.selectSnowballType('normal');
+        // Reset projectile selection
+        this.selectProjectileType('normal');
     }
 
     // Utility function to darken a color
