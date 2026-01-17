@@ -1,0 +1,15 @@
+{
+  "name": "snow-wall-smasher",
+  "version": "1.0.0",
+  "description": "Physics-based snowball throwing game using Matter.js",
+  "scripts": {
+    "start": "serve -s . -l $PORT",
+    "dev": "serve -s . -l 3000"
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
