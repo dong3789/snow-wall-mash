@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>스노우 월 스매셔 - Snow Wall Smasher</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Top UI -->
+        <div id="top-ui">
+            <div id="score-display">
+                <span class="label">점수</span>
+                <span id="score">0</span>
+            </div>
+            <div id="wind-display">
+                <span class="label">바람</span>
+                <div id="wind-indicator">
+                    <div id="wind-arrow">→</div>
+                    <span id="wind-strength">0</span>
+                </div>
+            </div>
+            <div id="snowball-count">
+                <span class="label">눈덩이</span>
+                <span id="remaining">20</span>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Bottom UI -->
+        <div id="bottom-ui">
+            <div id="snowball-selector">
+                <div class="snowball-type selected" data-type="normal" title="일반 눈덩이">
+                    <div class="snowball-icon normal"></div>
+                    <span>일반</span>
+                    <span class="count">∞</span>
+                </div>
+                <div class="snowball-type" data-type="heavy" title="묵직한 눈덩이">
+                    <div class="snowball-icon heavy"></div>
+                    <span>묵직</span>
+                    <span class="count" id="heavy-count">3</span>
+                </div>
+                <div class="snowball-type" data-type="paint" title="페인트 눈덩이">
+                    <div class="snowball-icon paint"></div>
+                    <span>페인트</span>
+                    <span class="count" id="paint-count">2</span>
+                </div>
+            </div>
+            <div id="throw-hint">화면을 드래그하여 눈덩이를 던지세요!</div>
+        </div>
+
+        <!-- Curve Indicator -->
+        <div id="curve-indicator" class="hidden">
+            <span>🌀 커브!</span>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-modal" class="hidden">
+            <div class="modal-content">
+                <h2 id="modal-title">게임 오버</h2>
+                <p id="modal-message">눈덩이를 모두 소진했습니다!</p>
+                <div id="final-score">
+                    <span>최종 점수: </span>
+                    <span id="final-score-value">0</span>
+                </div>
+                <button id="restart-btn">다시 시작</button>
+            </div>
+        </div>
+
+        <!-- Level Info -->
+        <div id="level-info" class="hidden">
+            <h3>레벨 <span id="level-number">1</span></h3>
+            <p id="level-desc">얼음 벽을 부수세요!</p>
+        </div>
+    </div>
+
+    <!-- Matter.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <!-- Game Script -->
+    <script src="game.js"></script>
+</body>
+</html>
