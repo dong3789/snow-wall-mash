@@ -128,7 +128,7 @@ class SnowWallSmasher {
             gravity: { x: 0, y: CONFIG.gravity }
         });
 
-        // Create renderer
+        // Create renderer - use pixelRatio 1 to avoid coordinate scaling issues
         this.render = Render.create({
             canvas: this.canvas,
             engine: this.engine,
@@ -137,7 +137,7 @@ class SnowWallSmasher {
                 height: this.canvas.height,
                 wireframes: false,
                 background: '#1a1a2e',
-                pixelRatio: Math.min(window.devicePixelRatio || 1, 2) // Limit pixel ratio for performance
+                pixelRatio: 1
             }
         });
 
@@ -223,12 +223,10 @@ class SnowWallSmasher {
 
     getCanvasCoords(event) {
         const rect = this.canvas.getBoundingClientRect();
-        // Account for any scaling between CSS size and canvas size
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
+        // Direct mapping - canvas size matches display size with pixelRatio 1
         return {
-            x: (event.clientX - rect.left) * scaleX,
-            y: (event.clientY - rect.top) * scaleY
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
         };
     }
 
