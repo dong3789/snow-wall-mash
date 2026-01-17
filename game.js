@@ -24,8 +24,8 @@ const CONFIG = {
 
     // Wall properties
     wall: {
-        brickWidth: 40,
-        brickHeight: 25,
+        brickWidth: 35,
+        brickHeight: 22,
         gap: 2,
         materials: {
             ice: { friction: 0.02, restitution: 0.6, health: 1, color: '#81d4fa' },
@@ -98,18 +98,21 @@ class SnowWallSmasher {
         this.updateUI();
         this.startWindCycle();
         this.showLevelInfo();
+
+        // Debug: Log canvas and wall info
+        console.log('Canvas size:', this.canvas.width, 'x', this.canvas.height);
+        console.log('Wall bricks created:', this.state.wallBricks.length);
     }
 
     setupCanvas() {
-        // Set canvas size to fill container
-        const container = document.getElementById('game-container');
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight;
+        // Set canvas size to fill window
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
 
         // Handle resize
         window.addEventListener('resize', () => {
-            this.canvas.width = container.clientWidth;
-            this.canvas.height = container.clientHeight;
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
             if (this.render) {
                 this.render.canvas.width = this.canvas.width;
                 this.render.canvas.height = this.canvas.height;
@@ -133,8 +136,8 @@ class SnowWallSmasher {
                 width: this.canvas.width,
                 height: this.canvas.height,
                 wireframes: false,
-                background: 'transparent',
-                pixelRatio: window.devicePixelRatio || 1
+                background: '#1a1a2e',
+                pixelRatio: Math.min(window.devicePixelRatio || 1, 2) // Limit pixel ratio for performance
             }
         });
 
@@ -586,11 +589,15 @@ class SnowWallSmasher {
         const materialKey = materials[(this.state.level - 1) % materials.length];
         const material = CONFIG.wall.materials[materialKey];
 
-        // Calculate wall dimensions
-        const wallWidth = Math.min(400, this.canvas.width * 0.6);
-        const wallHeight = Math.min(300, this.canvas.height * 0.35);
+        // Calculate wall dimensions - account for UI (top: ~80px, bottom: ~150px)
+        const topMargin = 100; // Space for top UI
+        const bottomMargin = 180; // Space for bottom UI and throw area
+        const availableHeight = this.canvas.height - topMargin - bottomMargin;
+
+        const wallWidth = Math.min(350, this.canvas.width * 0.85);
+        const wallHeight = Math.min(250, availableHeight * 0.6);
         const startX = (this.canvas.width - wallWidth) / 2;
-        const startY = this.canvas.height * 0.15;
+        const startY = topMargin + 20; // Position wall below top UI
 
         const brickW = CONFIG.wall.brickWidth;
         const brickH = CONFIG.wall.brickHeight;
