@@ -397,10 +397,9 @@ class SnowWallSmasher {
         console.log('Start position:', startPos);
         console.log('Velocity:', velocity);
 
-        // Check if we have enough projectiles
+        // Check if we have enough projectiles (normal is unlimited)
         if (type === 'heavy' && this.state.heavyProjectiles <= 0) return;
         if (type === 'paint' && this.state.paintProjectiles <= 0) return;
-        if (type === 'normal' && this.state.projectilesRemaining <= 0) return;
 
         const physics = CONFIG.projectile[type];
         const visual = costume[type];
@@ -447,10 +446,8 @@ class SnowWallSmasher {
         console.log('Projectile velocity:', vx, vy);
         console.log('Active projectiles:', this.state.activeProjectiles.length);
 
-        // Decrement projectile count
-        if (type === 'normal') {
-            this.state.projectilesRemaining--;
-        } else if (type === 'heavy') {
+        // Decrement projectile count (normal is unlimited)
+        if (type === 'heavy') {
             this.state.heavyProjectiles--;
         } else if (type === 'paint') {
             this.state.paintProjectiles--;
@@ -942,7 +939,7 @@ class SnowWallSmasher {
 
     updateUI() {
         document.getElementById('score').textContent = this.state.score;
-        document.getElementById('remaining').textContent = this.state.projectilesRemaining;
+        // Normal projectiles are unlimited (∞ is set in HTML)
         document.getElementById('heavy-count').textContent = this.state.heavyProjectiles;
         document.getElementById('paint-count').textContent = this.state.paintProjectiles;
 
@@ -964,14 +961,7 @@ class SnowWallSmasher {
             return;
         }
 
-        // Lose condition: no projectiles and no active projectiles
-        const totalProjectiles = this.state.projectilesRemaining +
-                              this.state.heavyProjectiles +
-                              this.state.paintProjectiles;
-
-        if (totalProjectiles <= 0 && this.state.activeProjectiles.length === 0) {
-            this.defeat();
-        }
+        // Note: Normal projectiles are unlimited, so no lose condition based on ammo
     }
 
     victory() {
