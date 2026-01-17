@@ -223,9 +223,12 @@ class SnowWallSmasher {
 
     getCanvasCoords(event) {
         const rect = this.canvas.getBoundingClientRect();
+        // Account for any scaling between CSS size and canvas size
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
         return {
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top
+            x: (event.clientX - rect.left) * scaleX,
+            y: (event.clientY - rect.top) * scaleY
         };
     }
 
@@ -318,6 +321,10 @@ class SnowWallSmasher {
     throwSnowball(startPos, velocity, curve) {
         const type = this.state.selectedSnowballType;
 
+        console.log('Throwing snowball:', type);
+        console.log('Start position:', startPos);
+        console.log('Velocity:', velocity);
+
         // Check if we have enough snowballs
         if (type === 'heavy' && this.state.heavySnowballs <= 0) return;
         if (type === 'paint' && this.state.paintSnowballs <= 0) return;
@@ -360,6 +367,10 @@ class SnowWallSmasher {
         // Add to world
         Composite.add(this.engine.world, snowball);
         this.state.activeSnowballs.push(snowball);
+
+        console.log('Snowball created at:', snowball.position);
+        console.log('Snowball velocity:', vx, vy);
+        console.log('Active snowballs:', this.state.activeSnowballs.length);
 
         // Decrement snowball count
         if (type === 'normal') {
@@ -594,17 +605,28 @@ class SnowWallSmasher {
         const bottomMargin = 180; // Space for bottom UI and throw area
         const availableHeight = this.canvas.height - topMargin - bottomMargin;
 
-        const wallWidth = Math.min(350, this.canvas.width * 0.85);
-        const wallHeight = Math.min(250, availableHeight * 0.6);
-        const startX = (this.canvas.width - wallWidth) / 2;
-        const startY = topMargin + 20; // Position wall below top UI
-
         const brickW = CONFIG.wall.brickWidth;
         const brickH = CONFIG.wall.brickHeight;
         const gap = CONFIG.wall.gap;
 
-        const cols = Math.floor(wallWidth / (brickW + gap));
-        const rows = Math.floor(wallHeight / (brickH + gap));
+        // Calculate columns and rows first
+        const maxWallWidth = Math.min(350, this.canvas.width * 0.85);
+        const maxWallHeight = Math.min(250, availableHeight * 0.6);
+
+        const cols = Math.floor(maxWallWidth / (brickW + gap));
+        const rows = Math.floor(maxWallHeight / (brickH + gap));
+
+        // Calculate actual wall dimensions based on brick count
+        const actualWallWidth = cols * (brickW + gap) - gap;
+        const actualWallHeight = rows * (brickH + gap) - gap;
+
+        // Center the wall properly
+        const startX = (this.canvas.width - actualWallWidth) / 2;
+        const startY = topMargin + 20; // Position wall below top UI
+
+        console.log('Wall dimensions:', actualWallWidth, 'x', actualWallHeight);
+        console.log('Wall position:', startX, startY);
+        console.log('Cols:', cols, 'Rows:', rows);
 
         // Randomly select target area (2x2 to 3x3 bricks)
         const targetWidth = 2 + Math.floor(Math.random() * 2);
